@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <title>WegGL Example</title>
+
+    <script type="text/javascript" src="gl-matrix-min.js"></script>
+    <script type="text/javascript" src="globals.js"></script>
+    <script type="text/javascript" src="ShaderProgram.js"></script>
+    <script type="text/javascript" src="main.js"></script>
+    <script type="text/javascript" src="Shape.js"></script>
+    <script type="text/javascript" src="Tetracube.js"></script>
+    <script type="text/javascript" src="Grid.js"></script>
+    <script type="text/javascript" src="helpers.js"></script>
+    <script id="v-shader-nolight" type="x-shader/x-vertex">
+        precision mediump float;
+
+        attribute vec3 vertexPosition; 
+        attribute vec3 vertexColor;   
+
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+
+        varying vec3 fragmentColor;    
+
+        void main() {
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(vertexPosition, 1.0); 
+            fragmentColor = vertexColor; 
+        }
+    </script>
+    <script id="v-shader" type="x-shader/x-vertex">
+        precision mediump float;
+
+        attribute vec3 vertexPosition; 
+        attribute vec3 vertexColor;    
+        attribute vec3 vertexNormal;
+
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+        uniform mat3 normalMatrix;
+
+        uniform vec4 lightViewPosition;
+
+        varying vec3 fragmentColor;    
+
+        void main() {
+            // Transform vertex position to view space
+            vec4 viewPosition = modelViewMatrix * vec4(vertexPosition, 1.0);
+
+            // Calculate and normalize light vector
+            vec3 lightVector = normalize(lightViewPosition.xyz - viewPosition.xyz);
+            // Transform and normalize the normal
+            vec3 transformedNormal = normalize(normalMatrix * vertexNormal);
+
+            // Calculate light intensity
+            // This can be negative, so just make negative values 0
+            float lightIntensity = max(dot(lightVector, transformedNormal), 0.0);
+
+            gl_Position = projectionMatrix * viewPosition; 
+            // Multiply vertex color with lightIntensity
+            fragmentColor = vertexColor * lightIntensity;
+        }
+    </script>
+    <script id="v-shader-phonglight" type="x-shader/x-vertex">
+        precision mediump float;
+
+        attribute vec3 vertexPosition; 
+        attribute vec3 vertexColor;    
+        attribute vec3 vertexNormal;
+
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+        uniform mat3 normalMatrix;
+
+        uniform vec4 lightViewPosition;
+
+        varying vec3 fragmentColor;    
+
+        void main() {
+            // Transform vertex position to view space
+            vec4 viewPosition = modelViewMatrix * vec4(vertexPosition, 1.0);
+
+            // Calculate and normalize light vector
+            vec3 lightVector = normalize(lightViewPosition.xyz - viewPosition.xyz);
+            // Transform and normalize the normal
+            vec3 transformedNormal = normalize(normalMatrix * vertexNormal);
+
+            // Calculate light intensity
+            // This can be negative, so just make negative values 0
+            float lightIntensity = max(dot(lightVector, transformedNormal), 0.0);
+
+            vec3 ambient = vec3(0.1,0.1,0.1);
+
+            vec3 diffuse = vertexColor * lightIntensity;
+
+            vec3 reflection = 2.0*dot(transformedNormal, lightVector)*transformedNormal - lightVector;
+
+            //vec3 H = normalize(lightVector + normalize(-viewPosition.xyz)); //from ANgel Book [kind of]
+
+            vec3 specular = pow(max(dot(reflection, transformedNormal), 0.0), 100.0) * vec3(1,1,1); 
+
+            gl_Position = projectionMatrix * viewPosition; 
+            // Multiply vertex color with lightIntensity
+            fragmentColor = ambient + diffuse + specular;
+        }
+
+    </script>
+
+    <script id="phongF-vshader" type= "x-shader/x-vertex">
+        precision mediump float;
+
+        attribute vec3 vertexPosition; 
+        attribute vec3 vertexColor;    
+        attribute vec3 vertexNormal;
+
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+        uniform mat3 normalMatrix;
+
+        
+
+        varying vec4 viewPosition;
+        varying vec3 varVertexColor;
+        varying vec3 varVertexNormal;
+        varying vec3 lightVector;
+
+        uniform vec4 lightViewPosition;
+    
+
+        void main() {
+            // Transform vertex position to view space
+            viewPosition = modelViewMatrix * vec4(vertexPosition, 1.0);
+
+            varVertexColor = vertexColor;
+
+            lightVector = normalize(lightViewPosition.xyz - viewPosition.xyz);
+
+            
+
+            // Calculate and normalize light vector
+            //vec3 lightVector = normalize(lightViewPosition.xyz - viewPosition.xyz);
+            // Transform and normalize the normal
+            varVertexNormal = normalize(normalMatrix * vertexNormal);
+
+            // Calculate light intensity
+            // This can be negative, so just make negative values 0
+            
+
+            gl_Position = projectionMatrix * viewPosition; 
+            // Multiply vertex color with lightIntensity
+            
+        }
+
+    </script>
+    <script id="f-shader" type="x-shader/x-fragment">
+        precision mediump float;
+
+        varying vec3 fragmentColor;
+        
+
+        void main() {
+            gl_FragColor = vec4(fragmentColor, 1.0);
+        }
+    </script>
+
+    <script id="phongF-shader" type="x-shader/x-fragment">
+
+        precision mediump float;
+
+        varying vec3 varVertexColor;
+        varying vec3 varVertexNormal;
+        varying vec4 viewPosition;
+
+        varying vec3 lightVector;
+
+        
+
+        
+
+        
+
+        void main()
+            {
+                
+                
+               
+
+                float lightIntensity = max(dot(lightVector, varVertexNormal), 0.0);
+
+                vec3 ambient = vec3(0.1,0.1,0.1);
+
+                
+
+                vec3 diffuse = varVertexColor * lightIntensity;
+
+                vec3 reflection = 2.0*dot(varVertexNormal, lightVector)*varVertexNormal - lightVector;
+
+                //vec3 H = normalize(lightVector + normalize(-viewPosition.xyz)); //from ANgel Book [kind of]
+
+                vec3 specular = pow(max(dot(reflection, varVertexNormal), 0.0), 50.0)  * vec3(1,1,1); 
+
+                vec3 fragmentColor = ambient + diffuse + specular;
+                gl_FragColor = vec4(fragmentColor, 1.0);
+            }
+    </script>
+
+    <script id="phongFdiffuse-shader" type="x-shader/x-fragment">
+
+        precision mediump float;
+
+        varying vec3 varVertexColor;
+        varying vec3 varVertexNormal;
+        varying vec4 viewPosition;
+
+        varying vec3 lightVector;
+
+        
+
+        
+
+        
+
+        void main()
+            {
+                
+                
+                float lightIntensity = max(dot(lightVector, varVertexNormal), 0.0);
+
+                vec3 ambient = vec3(0.1,0.1,0.1);
+
+                
+
+                vec3 diffuse = varVertexColor * lightIntensity;
+
+                vec3 reflection = 2.0*dot(varVertexNormal, lightVector)*varVertexNormal - lightVector;
+
+                //vec3 H = normalize(lightVector + normalize(-viewPosition.xyz)); //from ANgel Book [kind of]
+
+                vec3 specular = pow(max(dot(reflection, varVertexNormal), 0.0), 50.0)  * vec3(1,1,1); 
+
+                vec3 fragmentColor = diffuse;
+                gl_FragColor = vec4(fragmentColor, 1.0);
+            }
+    </script>
+
+</head>
+
+<body>
+    <canvas id="canvas" width="1200" height="600"></canvas>
+</body>
+
+</html>
