@@ -4,11 +4,11 @@ A 3D Tetris game written in WebGL
 
 <img src="https://github.com/Cyronio/Tetris3D/blob/main/Tetris_Screenshot.png">
 
-# Instructions
+## Instructions
 
 You need to run a server to play the game, for example by "python -m http.server".
 
-# Controls
+## Controls
 
 arrow keys or w,a,s,d for moving the tetracubes
 
